@@ -215,8 +215,10 @@ class ShapeUI:
     def _draw_heat_source_line(self):
         if not self.shape.drawn_points:
             return
-        for y in range(min(p.y for p in self.shape.drawn_points), max(p.y for p in self.shape.drawn_points)+1):
-            self._draw_heat_cell(0, y, "red")
+        # Draw heat source exactly where the user drew points at x=0
+        for point in self.shape.drawn_points:
+            if point.x == 0:  # Only for points at x=0
+                self._draw_heat_cell(0, point.y, "red")
 
     def _draw_heat_cell(self, x, y, color):
         canvas_y = self.height - 1 - y

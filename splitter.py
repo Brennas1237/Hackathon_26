@@ -151,6 +151,7 @@ class ShapeDataStructure:
                 y += self.resolution
 
         print(f"Integrated {len(filled_points)} interior points with k={k_value}, h={h_value}")
+        self._classify_points_by_quadrants()
         return filled_points
 
     def _classify_points_by_quadrants(self):
@@ -198,6 +199,7 @@ class ShapeDataStructure:
             
             # Calculate rotation
             point.attributes['rotation'] = self._calculate_rotation(point, missing_count, missing_quadrants)
+        
 
     def _update_point_quadrants(self, point: Point):
         """Update quadrant booleans based on whether diagonal points are drawn"""

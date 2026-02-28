@@ -1,50 +1,54 @@
 import sympy as sp
 import numpy as np
+
+
 def set_equations(point_list, T_base, T_free_stream, h, delta_x, k):
-    """
-    Generate equations for each point considering neighbors, rotation, 
-    and boundary conditions, avoiding singular matrices.
-    """
     valid_points = {(p.x, p.y) for p in point_list}
 
     for point in point_list:
         n, m = point.x, point.y
-        rot = point.attributes['rotation']
-        missing_count = point.count_missing_quadrants()
+        T = sp.Symbol(f'T{n}{m}')
+        rot = point.attributes.get('rotation', 0)
+        point_type = point.attributes.get('type', 'interior')
+        is_source = point.attributes.get('is_source', False)
 
-        # Symbols
-        T = sp.Symbol(f'T_{n}_{m}')
-
-        # Compute neighbor coordinates based on rotation
-        neighbors = [
-            (n + int(np.cos(rot)), m + int(np.sin(rot))),  # T1
-            (n - int(np.sin(rot)), m + int(np.cos(rot))),  # T2
-            (n - int(np.cos(rot)), m - int(np.sin(rot))),  # T3
-            (n + int(np.sin(rot)), m - int(np.cos(rot)))   # T4
-        ]
-
-        lhs_terms = []
-        rhs = 0
-
-        # Loop over neighbors
-        for nx, ny in neighbors:
-            if (nx, ny) in valid_points:
-                lhs_terms.append(sp.Symbol(f'T_{nx}_{ny}'))
-            else:
-                # Missing neighbor → move contribution to RHS
-                rhs += 2 * (h * delta_x / k) * T_free_stream
-
-        # Build equation depending on missing count and location
-        if n == 0:  # Left boundary: Dirichlet
-            eq = sp.Eq(T, T_base)
+        if is_source:
+            # Heat source: just fix the temperature
+            eq = T - point.attributes['T_source']
+        elif point_type == 'root':
+            eq = T - T_base
+        elif point_type == 'interior':
+            T_up    = sp.Symbol(f'T{n}{m+1}') if (n, m+1) in valid_points else T_free_stream
+            T_down  = sp.Symbol(f'T{n}{m-1}') if (n, m-1) in valid_points else T_free_stream
+            T_right = sp.Symbol(f'T{n+1}{m}') if (n+1, m) in valid_points else T_free_stream
+            T_left  = sp.Symbol(f'T{n-1}{m}') if (n-1, m) in valid_points else T_free_stream
+            eq = T_up + T_down + T_right + T_left - 4*T
+        elif point_type == 'interior_corner':
+            T1 = 2 * (sp.Symbol(f'T{int(n - np.cos(rot))}{int(m)}') if (int(n - np.cos(rot)), m) in valid_points else T_free_stream)
+            T2 = 2 * (sp.Symbol(f'T{n}{int(m + np.sin(rot))}') if (n, int(m + np.sin(rot))) in valid_points else T_free_stream)
+            T3 = sp.Symbol(f'T{int(n + np.cos(rot))}{m}') if (int(n + np.cos(rot)), m) in valid_points else T_free_stream
+            T4 = sp.Symbol(f'T{n}{int(m - np.sin(rot))}') if (n, int(m - np.sin(rot))) in valid_points else T_free_stream
+            eq = T1 + T2 + T3 + T4 - 2*(3 + h*delta_x/k)*T + 2*(h*delta_x/k)*T_free_stream
+        elif point_type == 'planar':
+            T1 = 2 * (sp.Symbol(f'T{int(n - np.cos(rot))}{m}') if (int(n - np.cos(rot)), m) in valid_points else T_free_stream)
+            T2 = 2 * (sp.Symbol(f'T{n}{int(m + np.sin(rot))}') if (n, int(m + np.sin(rot))) in valid_points else T_free_stream)
+            T3 = 2 * (sp.Symbol(f'T{n}{int(m - np.sin(rot))}') if (n, int(m - np.sin(rot))) in valid_points else T_free_stream)
+            eq = T1 + T2 + T3 - 2*(2 + h*delta_x/k)*T + 2*(h*delta_x/k)*T_free_stream
+        elif point_type == 'exterior_corner':
+            T1 = sp.Symbol(f'T{int(n - np.cos(rot))}{m}') if (int(n - np.cos(rot)), m) in valid_points else T_free_stream
+            T2 = sp.Symbol(f'T{n}{int(m - np.sin(rot))}') if (n, int(m - np.sin(rot))) in valid_points else T_free_stream
+            eq = T1 + T2 - 2*(2 + h*delta_x/k)*T + 2*(h*delta_x/k)*T_free_stream
         else:
-            # Sum of neighbors on LHS minus coefficient*central T
-            coeff = 2 * (len(lhs_terms) + h * delta_x / k)
-            eq = sp.Eq(sum(lhs_terms), coeff * T - rhs)
+            # fallback
+            T_up    = sp.Symbol(f'T{n}{m+1}') if (n, m+1) in valid_points else T_free_stream
+            T_down  = sp.Symbol(f'T{n}{m-1}') if (n, m-1) in valid_points else T_free_stream
+            T_right = sp.Symbol(f'T{n+1}{m}') if (n+1, m) in valid_points else T_free_stream
+            T_left  = sp.Symbol(f'T{n-1}{m}') if (n-1, m) in valid_points else T_free_stream
+            eq = T_up + T_down + T_right + T_left - 4*T
 
-        # Store equation and symbol
         point.attributes['equation'] = eq
         point.attributes['label'] = T
+        print(f"Point({n},{m}), type={point_type}, source={is_source}: sp.Eq({eq},0)")
 
 
 def make_equation_list(point_list):
