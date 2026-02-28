@@ -43,6 +43,7 @@ class ShapeDataStructure:
             for q in Quadrant:
                 point.quadrants[q] = False
 
+            # Cardinal directions (4-directional)
             right_coord = (x + self.resolution, y)
             if right_coord in self.grid:
                 point.right = self.grid[right_coord]
@@ -142,7 +143,7 @@ class ShapeDataStructure:
                     point = self.grid[(x, y)]
                     if not point.is_drawn:
                         point.is_drawn = True
-                        # Store numeric thermal properties instead of just a material name
+                        # Store numeric thermal properties
                         point.attributes['k'] = k_value
                         point.attributes['h'] = h_value
                         point.attributes['temperature'] = temperature
@@ -151,11 +152,15 @@ class ShapeDataStructure:
                 y += self.resolution
 
         print(f"Integrated {len(filled_points)} interior points with k={k_value}, h={h_value}")
+        
         self._classify_points_by_quadrants()
+        for i, point in enumerate(list(self.shape.drawn_points)[:10]):
+            print(f"Point {i}: ({point.x},{point.y}) type={point.attributes['type']}")
         return filled_points
 
     def _classify_points_by_quadrants(self):
         """Classify points based on missing quadrants and set rotation"""
+        # First reset all quadrants for drawn points
         for point in self.drawn_points:
             for q in Quadrant:
                 point.quadrants[q] = False
@@ -174,7 +179,7 @@ class ShapeDataStructure:
         
         # Now classify based on updated quadrants
         for point in self.drawn_points:
-            # Check for root node
+            # Check for root node (heat source at x=0)
             if point.x == 0:
                 point.attributes['type'] = PointType.ROOT
                 point.attributes['rotation'] = 0.0
@@ -199,7 +204,6 @@ class ShapeDataStructure:
             
             # Calculate rotation
             point.attributes['rotation'] = self._calculate_rotation(point, missing_count, missing_quadrants)
-        
 
     def _update_point_quadrants(self, point: Point):
         """Update quadrant booleans based on whether diagonal points are drawn"""
@@ -276,7 +280,6 @@ class ShapeDataStructure:
                     rotation = 0.0
                 elif present[0] == Quadrant.Q3:
                     rotation = np.pi/2
-                    print(f"Point at ({point.x}, {point.y}) is missing Q4, Q2, Q1 - rotation set to π/2 or {rotation}")
                 elif present[0] == Quadrant.Q2:
                     rotation = np.pi
                 elif present[0] == Quadrant.Q1:
@@ -298,7 +301,6 @@ class ShapeDataStructure:
     
     def print_classification(self):
         """Utility function to print classification of all drawn points by type"""
-        # with a print to help us know what is going wrong
         if not self.drawn_points:
             print("No drawn points to classify")
             return
@@ -338,7 +340,6 @@ class ShapeDataStructure:
                     print(f"     ... and {len(points) - 5} more")
         
         print(f"Total points filled in: {len(self.drawn_points)}")
-
         print("\n" + "="*60)
 
     def get_points_by_type(self, point_type: PointType) -> List[Point]:
@@ -352,14 +353,15 @@ class ShapeDataStructure:
         return self.grid.get((x, y))
     
     def clear_shape(self):
-        """Clear all drawn points
-        if we want to reset the drawing we can just call this"""
+        """Clear all drawn points"""
         for point in self.drawn_points:
             point.is_drawn = False
             point.attributes['type'] = None
             point.attributes['material'] = None
             point.attributes['temperature'] = 20.0
             point.attributes['root'] = False
+            point.attributes['k'] = None
+            point.attributes['h'] = None
         
         self.drawn_points.clear()
         print("Shape cleared")
