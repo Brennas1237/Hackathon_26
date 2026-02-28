@@ -1,8 +1,7 @@
 import sympy as sp
 import numpy as np
 import Point
-from physics import set_equaiton
-# import T_free_stream, h, delta_x, k
+
 
 
 def make_equation_list(point_list):
@@ -12,12 +11,16 @@ def make_equation_list(point_list):
         equation_list.append(equation)
     return equation_list
 
-# def name_variables(surface max y, surface max x):
-#     variable_list = []
-#         for m in int(surface max y/delta_x)
-#           for n in int(surface max x / delta_x):
-#               variable = sp.Symbol("T" + str(n) + str(m))
-#               variable_list.append(variable)
-#   return
+def make_variable_list(point_list):
+    variable_list = []
+    for point in point_list:
+        variable = point.variable
+        variable_list.append(variable)
 
-def solve(equation_list):
+def solve_system(equation_list, variable_list):
+    coefficient_matrix, solution_vector = sp.linear_eq_to_matrix(equation_list, variable_list)
+    coefficient_matrix = sp.matrix2numpy(coefficient_matrix, dtype=float)
+    solution_vector = sp.matrix2numpy(solution_vector, dtype=float)
+    temperature_list = np.linalg.solve(coefficient_matrix, solution_vector)
+    return temperature_list
+
