@@ -17,6 +17,7 @@ class ShapeDataStructure:
         
         # Track drawn points in a set because we use this to do lookups
         self.drawn_points: Set[Point] = set()
+        self.all_points: Set[Point] = set(self.grid.values())
 
     def _initialize_grid(self):
         """Initialize entire grid as exterior points"""
@@ -85,6 +86,7 @@ class ShapeDataStructure:
 
     def add_drawn_shape(self, coordinates: List[Tuple[float, float]], material=None, temperature=20.0):
         """Add a drawn shape to the grid"""
+        print("Establishing drawn shape on grid")
         drawn_points = []
         
         for coord in coordinates:
@@ -107,6 +109,108 @@ class ShapeDataStructure:
         self._classify_points_by_quadrants()
         
         return drawn_points
+    
+    def shape_fill(self, shape_coordinates: List[Tuple[float, float]], material=None, temperature=20.0):
+        """Given a list of shape coordinates (boundary), fill in the interior points
+        
+        Uses a scanline fill algorithm to find all interior points within the shape boundary.
+        Assigns quadrant information and classifies all points as interior
+        """
+        print(f"Starting to fill shape")
+        if len(shape_coordinates) < 3:
+            print("Warning: Shape needs at least 3 points to fill")
+            return self.add_drawn_shape(shape_coordinates, material, temperature)
+        
+        # First, add the boundary points
+        boundary_points = self.add_drawn_shape(shape_coordinates, material, temperature)
+        
+        if not boundary_points:
+            return []
+        
+        # Get all grid coordinates
+        all_filled_points = set(boundary_points)
+        
+        # Find min and max bounds of the shape
+        min_x = min(x for x, y in shape_coordinates)
+        max_x = max(x for x, y in shape_coordinates)
+        min_y = min(y for x, y in shape_coordinates)
+        max_y = max(y for x, y in shape_coordinates)
+        
+        # Round to grid
+        min_x = round(min_x / self.resolution) * self.resolution
+        max_x = round(max_x / self.resolution) * self.resolution
+        min_y = round(min_y / self.resolution) * self.resolution
+        max_y = round(max_y / self.resolution) * self.resolution
+        
+        # Convert shape coordinates to grid points for polygon test
+        grid_shape = []
+        for x, y in shape_coordinates:
+            grid_x = round(x / self.resolution) * self.resolution
+            grid_y = round(y / self.resolution) * self.resolution
+            grid_shape.append((grid_x, grid_y))
+        
+        # Scanline fill algorithm
+        filled_points = []
+        
+        # For each row between min and max y
+        y = min_y
+        while y <= max_y:
+            # Find intersections with shape boundary at this y
+            intersections = []
+            
+            # Check each edge of the polygon
+            for i in range(len(grid_shape)):
+                p1 = grid_shape[i]
+                p2 = grid_shape[(i + 1) % len(grid_shape)]
+                
+                # Skip horizontal edges
+                if p1[1] == p2[1]:
+                    continue
+                
+                # Check if this edge crosses our scanline
+                if (p1[1] <= y < p2[1]) or (p2[1] <= y < p1[1]):
+                    # Calculate x intersection
+                    x_intersect = p1[0] + (y - p1[1]) * (p2[0] - p1[0]) / (p2[1] - p1[1])
+                    
+                    # Round to grid
+                    x_intersect = round(x_intersect / self.resolution) * self.resolution
+                    intersections.append(x_intersect)
+            
+            # Sort intersections
+            intersections.sort()
+            
+            # Fill between pairs of intersections
+            for i in range(0, len(intersections), 2):
+                if i + 1 < len(intersections):
+                    x_start = intersections[i]
+                    x_end = intersections[i + 1]
+                    
+                    # Fill all grid points between x_start and x_end
+                    x = x_start
+                    while x <= x_end:
+                        if (x, y) in self.grid:
+                            point = self.grid[(x, y)]
+                            
+                            # Only fill if not already drawn
+                            if not point.is_drawn:
+                                point.is_drawn = True
+                                point.attributes['material'] = material
+                                point.attributes['temperature'] = temperature
+                                point.attributes['type'] = PointType.INTERIOR
+                                point.attributes['rotation'] = 0.0
+                                self.drawn_points.add(point)
+                                filled_points.append(point)
+                                all_filled_points.add(point)
+                        
+                        x += self.resolution
+            
+            y += self.resolution
+        
+        # Reclassify all points (including new interior ones)
+        self._classify_points_by_quadrants()
+        
+        print(f"Shape fill complete: {len(boundary_points)} boundary points, {len(filled_points)} interior points")
+        return list(all_filled_points)
 
     def _classify_points_by_quadrants(self):
         """Classify points based on missing quadrants and set rotation"""
@@ -114,7 +218,7 @@ class ShapeDataStructure:
             # Check for root node
             if point.x == 0:
                 point.attributes['type'] = PointType.ROOT
-                point.attributes['rotation'] = 0
+                point.attributes['rotation'] = 0.0
                 point.attributes['root'] = True
                 continue
             
@@ -225,6 +329,7 @@ class ShapeDataStructure:
                     rotation = 0.0
                 elif present[0] == Quadrant.Q3:
                     rotation = np.pi/2
+                    print(f"Point at ({point.x}, {point.y}) is missing Q4, Q2, Q1 - rotation set to π/2 or {rotation}")
                 elif present[0] == Quadrant.Q2:
                     rotation = np.pi
                 elif present[0] == Quadrant.Q1:
@@ -236,9 +341,94 @@ class ShapeDataStructure:
         else:
             rotation = 0.0
         
-        # Store rotation in degrees as well for easier use
-        point.attributes['rotation_deg'] = rotation * 180 / np.pi
         return rotation
+
+    def update_neighbors(self, point: Point):
+        """Update the neighbors list for a point based on the new rotation"""
+        rotation = point.attributes.get('rotation', 0)
+        if rotation == 0:
+            pass
     
+    def print_classification(self):
+        """Utility function to print classification of all drawn points by type"""
+        # with a print to help us know what is going wrong
+        if not self.drawn_points:
+            print("No drawn points to classify")
+            return
+        
+        # Group points by type
+        points_by_type = {}
+        for point_type in PointType:
+            points_by_type[point_type] = []
+        
+        for point in self.drawn_points:
+            point_type = point.attributes.get('type')
+            if point_type in points_by_type:
+                points_by_type[point_type].append(point)
+        
+        # Print summary
+        print("\n" + "="*60)
+        print("POINT CLASSIFICATION SUMMARY")
+        print("="*60)
+        
+        total_points = len(self.drawn_points)
+        print(f"Total drawn points: {total_points}")
+        
+        for point_type, points in points_by_type.items():
+            if points:
+                count = len(points)
+                percentage = (count / total_points) * 100
+                print(f"\n{point_type.value.upper()}: {count} points ({percentage:.1f}%)")
+                
+                # Show sample points (up to 5)
+                for i, point in enumerate(points[:5]):
+                    missing = point.get_missing_quadrants()
+                    missing_str = [q.value for q in missing] if missing else ["none"]
+                    rotation = point.attributes.get('rotation', 0)
+                    print(f"  {i+1}. ({point.x}, {point.y}) - Missing: {missing_str}, Rot: {rotation:.2f} radians")
+                
+                if len(points) > 5:
+                    print(f"     ... and {len(points) - 5} more")
+        
+        print(f"Total points filled in: {len(self.all_points)}")
+
+        print("\n" + "="*60)
 
 
+    def get_temperature_field(self) -> List[List[float]]:
+        """Get 2D array of temperatures for visualization, this will be useful later for color mapping"""
+        cols = int(self.width / self.resolution)
+        rows = int(self.height / self.resolution)
+        
+        field = [[20.0 for j in range(cols)] for j in range(rows)]
+        
+        for (x, y), point in self.grid.items():
+            if point.is_drawn:
+                col = int(x / self.resolution)
+                row = int(y / self.resolution)
+                field[row][col] = point.attributes['temperature']
+                
+        return field
+    
+    def get_points_by_type(self, point_type: PointType) -> List[Point]:
+        """Get all points of a specific type"""
+        return [p for p in self.drawn_points if p.attributes.get('type') == point_type]
+    
+    def get_point_at(self, x: float, y: float) -> Optional[Point]:
+        """Get point at specific grid coordinates"""
+        x = round(x / self.resolution) * self.resolution
+        y = round(y / self.resolution) * self.resolution
+        return self.grid.get((x, y))
+    
+    def clear_shape(self):
+        """Clear all drawn points
+        if we want to reset the drawing we can just call this"""
+        for point in self.drawn_points:
+            point.is_drawn = False
+            point.attributes['type'] = None
+            point.attributes['material'] = None
+            point.attributes['temperature'] = 20.0
+            point.attributes['root'] = False
+        
+        self.drawn_points.clear()
+        print("Shape cleared")

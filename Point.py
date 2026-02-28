@@ -20,21 +20,22 @@ class Point:
         self.q3: Optional['Point'] = None  # SW
         self.q4: Optional['Point'] = None  # SE
 
+        self.quadrants = {
+            Quadrant.Q1: False,
+            Quadrant.Q2: False,
+            Quadrant.Q3: False,
+            Quadrant.Q4: False
+        }
+
          # Point attributes as a dictionary
         self.attributes = {
             'type': None,           # PointType (exterior, interior, planar, root, corner)
             'root': False,          
             'temperature': 20.0,     # Current temperature
             'material': None,        # Material at this point
-            'quadrants': {           # Which quadrants have adjacent points
-                Quadrant.NE: False,
-                Quadrant.NW: False,
-                Quadrant.SE: False,
-                Quadrant.SW: False
-            },
-            #'boundary_condition': None,  # maybe use this later if we want 
             'heat_source': 0.0,          # Energy of heat
-            'neighbors': []               # List of adjacent points
+            'neighbors': [] ,              # List of adjacent points
+            'rotation': 0.0
         }
 
         set_temperature = self.attributes['temperature']

@@ -21,12 +21,12 @@ if __name__ == "__main__":
         shape_coords.append((x, 10))
     
     # Vertical line
-    for y in range(5, 16):
-        if y != 10:  # Skip center (already added)
-            shape_coords.append((10, y))
+    # for y in range(5, 16):
+    #     if y != 10:  # Skip center (already added)
+    #         shape_coords.append((10, y))
     
     # Add the shape
-    system.add_drawn_shape(shape_coords, material="copper", temperature=100.0)
+    system.shape_fill(shape_coords, material="copper", temperature=100.0)
     
     # Print classification
     system.print_classification()
