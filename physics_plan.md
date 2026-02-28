@@ -6,7 +6,7 @@ Input:
 - point type and missing quadrants
 
 Output:
-- temperature equation
+- sympy equation for temperature at node
 
 Functions:
 - calculate rotation value based on missing quadrant
