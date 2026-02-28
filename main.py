@@ -17,8 +17,8 @@ if __name__ == "__main__":
     shape_coords = []
     
     # Horizontal line
-    for x in range(5, 16):
-        shape_coords.append((x, 10))
+    for x in range(0, 21):
+        shape_coords.append((x, 1))
     
     # Vertical line
     # for y in range(5, 16):
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     #         shape_coords.append((10, y))
     
     # Add the shape
-    system.shape_fill(shape_coords, material="copper", temperature=100.0)
+    system.integrate_under_line(shape_coords, material="copper", temperature=100.0)
     
     # Print classification
     system.print_classification()
