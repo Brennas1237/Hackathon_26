@@ -2,6 +2,7 @@
 from Point import Point, PointType, Quadrant
 import draw
 from typing import List, Tuple, Dict, Optional, Set
+import numpy as np
 
 
 class ShapeDataStructure:
@@ -88,7 +89,7 @@ class ShapeDataStructure:
             if missing_count == 0:
                 # 0 missing quadrants: interior node
                 point.attributes['type'] = PointType.INTERIOR
-                point.attributes['rotation'] = self._calculate_rotation(point, [])
+                point.attributes['rotation'] = self._calculate_rotation(point, missing_count ,[])
                 
             elif missing_count == 1:
                 # 1 missing quadrant: interior corner
@@ -124,10 +125,35 @@ class ShapeDataStructure:
             return point.q4
         return None    
 
-    def _calculate_rotation(self, point: Point, missing_quadrants: List[Quadrant]) -> int:
+    def _calculate_rotation(self, point: Point, missing_count, missing_quadrants: List[Quadrant]) -> int:
         """Calculate rotation based on which quadrants are missing"""
-        
-        return 0
+
+        def set_rotation(point):
+            if missing_count == 0:
+                rotation = 0
+            elif missing_count == 1:
+                rotation = (4 - missing_quadrants[0]) * np.pi / 2
+            elif missing_count == 2:
+                if missing_quadrants == ["Q1", "Q2"]:
+                    rotation = 3 * np.pi / 2
+                elif missing_quadrants == ["Q2", "Q3"]:
+                    rotation = np.pi
+                elif missing_quadrants == ["Q3", "Q4"]:
+                    rotation = np.pi / 2
+                elif missing_quadrants == ["Q1", "Q4"]:
+                    rotation = 0
+            elif missing_count == 3:
+                if missing_quadrants == ["Q1", "Q2", "Q3"]:
+                    rotation = 3 * np.pi / 2
+                elif missing_quadrants == ["Q2", "Q3", "Q4"]:
+                    rotation = np.pi
+                elif missing_quadrants == ["Q1", "Q3", "Q4"]:
+                    rotation = np.pi / 2
+                elif missing_quadrants == ["Q1", "Q2", "Q4"]:
+                    rotation = 0
+            else:
+                rotation = 0
+        return rotation
         
 
 
