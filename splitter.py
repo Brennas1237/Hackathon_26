@@ -123,6 +123,11 @@ class ShapeDataStructure:
         elif quadrant == Quadrant.Q4:
             return point.q4
         return None    
+
+    def _calculate_rotation(self, point: Point, missing_quadrants: List[Quadrant]) -> int:
+        """Calculate rotation based on which quadrants are missing"""
+        
+        return 0
         
 
 
