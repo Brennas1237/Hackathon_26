@@ -44,13 +44,6 @@ class Point:
         set_temperature = self.attributes['temperature']
         set_material = self.attributes['material']
 
-        self.quadrants = {
-            Quadrant.Q1: False,
-            Quadrant.Q2: False,
-            Quadrant.Q3: False,
-            Quadrant.Q4: False
-        }
-
     def get_missing_quadrants(self):
         """Return a list of missing quadrants for this point"""
         missing = []

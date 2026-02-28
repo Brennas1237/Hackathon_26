@@ -109,27 +109,24 @@ class ShapeDataStructure:
 
         return drawn_points
     
-    def integrate_under_line(self, coordinates, material=None, temperature=20.0):
+    def integrate_under_line(self, coordinates, k_value=None, h_value=None, temperature=20.0):
         """
         Fill all grid points vertically under a drawn line.
-        Assumes y=0 is the baseline.
+        Stores numeric thermal properties for physics simulation.
         """
         print("Integrating under drawn line")
 
         # First add the boundary points
-        boundary_points = self.add_drawn_shape(coordinates, material, temperature)
+        boundary_points = self.add_drawn_shape(coordinates, material=None, temperature=temperature)
 
         if not boundary_points:
             return []
 
         # Group boundary points by x coordinate
         column_heights = {}
-
         for point in boundary_points:
             x = point.x
             y = point.y
-
-            # Keep highest y for each x
             if x not in column_heights:
                 column_heights[x] = y
             else:
@@ -137,23 +134,23 @@ class ShapeDataStructure:
 
         filled_points = []
 
-        # For each column, fill from y=0 up to boundary height
+        # Fill each column from y=0 to max_y
         for x, max_y in column_heights.items():
             y = 0
             while y <= max_y:
                 if (x, y) in self.grid:
                     point = self.grid[(x, y)]
-
                     if not point.is_drawn:
                         point.is_drawn = True
-                        point.attributes['material'] = material
+                        # Store numeric thermal properties instead of just a material name
+                        point.attributes['k'] = k_value
+                        point.attributes['h'] = h_value
                         point.attributes['temperature'] = temperature
                         self.drawn_points.add(point)
                         filled_points.append(point)
-
                 y += self.resolution
 
-        print(f"Integrated {len(filled_points)} interior points")
+        print(f"Integrated {len(filled_points)} interior points with k={k_value}, h={h_value}")
         return filled_points
 
     def _classify_points_by_quadrants(self):
@@ -342,22 +339,6 @@ class ShapeDataStructure:
 
         print("\n" + "="*60)
 
-
-    def get_temperature_field(self) -> List[List[float]]:
-        """Get 2D array of temperatures for visualization, this will be useful later for color mapping"""
-        cols = int(self.width / self.resolution)
-        rows = int(self.height / self.resolution)
-        
-        field = [[20.0 for j in range(cols)] for j in range(rows)]
-        
-        for (x, y), point in self.grid.items():
-            if point.is_drawn:
-                col = int(x / self.resolution)
-                row = int(y / self.resolution)
-                field[row][col] = point.attributes['temperature']
-                
-        return field
-    
     def get_points_by_type(self, point_type: PointType) -> List[Point]:
         """Get all points of a specific type"""
         return [p for p in self.drawn_points if p.attributes.get('type') == point_type]
