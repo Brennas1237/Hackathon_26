@@ -104,116 +104,77 @@ class ShapeDataStructure:
                     point.attributes['temperature'] = temperature
                     self.drawn_points.add(point)
                     drawn_points.append(point)
-        
-        # Classify all drawn points
+
         self._classify_points_by_quadrants()
-        
+
         return drawn_points
     
-    def shape_fill(self, shape_coordinates: List[Tuple[float, float]], material=None, temperature=20.0):
-        """Given a list of shape coordinates (boundary), fill in the interior points
-        
-        Uses a scanline fill algorithm to find all interior points within the shape boundary.
-        Assigns quadrant information and classifies all points as interior
+    def integrate_under_line(self, coordinates, material=None, temperature=20.0):
         """
-        print(f"Starting to fill shape")
-        if len(shape_coordinates) < 3:
-            print("Warning: Shape needs at least 3 points to fill")
-            return self.add_drawn_shape(shape_coordinates, material, temperature)
-        
-        # First, add the boundary points
-        boundary_points = self.add_drawn_shape(shape_coordinates, material, temperature)
-        
+        Fill all grid points vertically under a drawn line.
+        Assumes y=0 is the baseline.
+        """
+        print("Integrating under drawn line")
+
+        # First add the boundary points
+        boundary_points = self.add_drawn_shape(coordinates, material, temperature)
+
         if not boundary_points:
             return []
-        
-        # Get all grid coordinates
-        all_filled_points = set(boundary_points)
-        
-        # Find min and max bounds of the shape
-        min_x = min(x for x, y in shape_coordinates)
-        max_x = max(x for x, y in shape_coordinates)
-        min_y = min(y for x, y in shape_coordinates)
-        max_y = max(y for x, y in shape_coordinates)
-        
-        # Round to grid
-        min_x = round(min_x / self.resolution) * self.resolution
-        max_x = round(max_x / self.resolution) * self.resolution
-        min_y = round(min_y / self.resolution) * self.resolution
-        max_y = round(max_y / self.resolution) * self.resolution
-        
-        # Convert shape coordinates to grid points for polygon test
-        grid_shape = []
-        for x, y in shape_coordinates:
-            grid_x = round(x / self.resolution) * self.resolution
-            grid_y = round(y / self.resolution) * self.resolution
-            grid_shape.append((grid_x, grid_y))
-        
-        # Scanline fill algorithm
+
+        # Group boundary points by x coordinate
+        column_heights = {}
+
+        for point in boundary_points:
+            x = point.x
+            y = point.y
+
+            # Keep highest y for each x
+            if x not in column_heights:
+                column_heights[x] = y
+            else:
+                column_heights[x] = max(column_heights[x], y)
+
         filled_points = []
-        
-        # For each row between min and max y
-        y = min_y
-        while y <= max_y:
-            # Find intersections with shape boundary at this y
-            intersections = []
-            
-            # Check each edge of the polygon
-            for i in range(len(grid_shape)):
-                p1 = grid_shape[i]
-                p2 = grid_shape[(i + 1) % len(grid_shape)]
-                
-                # Skip horizontal edges
-                if p1[1] == p2[1]:
-                    continue
-                
-                # Check if this edge crosses our scanline
-                if (p1[1] <= y < p2[1]) or (p2[1] <= y < p1[1]):
-                    # Calculate x intersection
-                    x_intersect = p1[0] + (y - p1[1]) * (p2[0] - p1[0]) / (p2[1] - p1[1])
-                    
-                    # Round to grid
-                    x_intersect = round(x_intersect / self.resolution) * self.resolution
-                    intersections.append(x_intersect)
-            
-            # Sort intersections
-            intersections.sort()
-            
-            # Fill between pairs of intersections
-            for i in range(0, len(intersections), 2):
-                if i + 1 < len(intersections):
-                    x_start = intersections[i]
-                    x_end = intersections[i + 1]
-                    
-                    # Fill all grid points between x_start and x_end
-                    x = x_start
-                    while x <= x_end:
-                        if (x, y) in self.grid:
-                            point = self.grid[(x, y)]
-                            
-                            # Only fill if not already drawn
-                            if not point.is_drawn:
-                                point.is_drawn = True
-                                point.attributes['material'] = material
-                                point.attributes['temperature'] = temperature
-                                point.attributes['type'] = PointType.INTERIOR
-                                point.attributes['rotation'] = 0.0
-                                self.drawn_points.add(point)
-                                filled_points.append(point)
-                                all_filled_points.add(point)
-                        
-                        x += self.resolution
-            
-            y += self.resolution
-        
-        # Reclassify all points (including new interior ones)
-        self._classify_points_by_quadrants()
-        
-        print(f"Shape fill complete: {len(boundary_points)} boundary points, {len(filled_points)} interior points")
-        return list(all_filled_points)
+
+        # For each column, fill from y=0 up to boundary height
+        for x, max_y in column_heights.items():
+            y = 0
+            while y <= max_y:
+                if (x, y) in self.grid:
+                    point = self.grid[(x, y)]
+
+                    if not point.is_drawn:
+                        point.is_drawn = True
+                        point.attributes['material'] = material
+                        point.attributes['temperature'] = temperature
+                        self.drawn_points.add(point)
+                        filled_points.append(point)
+
+                y += self.resolution
+
+        print(f"Integrated {len(filled_points)} interior points")
+        return filled_points
 
     def _classify_points_by_quadrants(self):
         """Classify points based on missing quadrants and set rotation"""
+        for point in self.drawn_points:
+            for q in Quadrant:
+                point.quadrants[q] = False
+    
+        # Then update quadrants based on actual diagonal connections
+        for point in self.drawn_points:
+            # Check each diagonal neighbor and set quadrant if it exists AND is drawn
+            if point.q1 is not None:
+                point.quadrants[Quadrant.Q1] = point.q1.is_drawn
+            if point.q2 is not None:
+                point.quadrants[Quadrant.Q2] = point.q2.is_drawn
+            if point.q3 is not None:
+                point.quadrants[Quadrant.Q3] = point.q3.is_drawn
+            if point.q4 is not None:
+                point.quadrants[Quadrant.Q4] = point.q4.is_drawn
+        
+        # Now classify based on updated quadrants
         for point in self.drawn_points:
             # Check for root node
             if point.x == 0:
@@ -222,37 +183,24 @@ class ShapeDataStructure:
                 point.attributes['root'] = True
                 continue
             
-            # First, update quadrants based on drawn status of diagonal neighbors
-            self._update_point_quadrants(point)
-            
-            # Count missing quadrants among drawn points
+            # Count missing quadrants
             missing_count = point.count_missing_quadrants()
             missing_quadrants = point.get_missing_quadrants()
             
             # Classify based on missing quadrants
             if missing_count == 0:
-                # 0 missing quadrants: interior node
                 point.attributes['type'] = PointType.INTERIOR
-                point.attributes['rotation'] = self._calculate_rotation(point, missing_count, missing_quadrants)
-                
             elif missing_count == 1:
-                # 1 missing quadrant: interior corner
                 point.attributes['type'] = PointType.INTERIOR_CORNER
-                point.attributes['rotation'] = self._calculate_rotation(point, missing_count, missing_quadrants)
-                
             elif missing_count == 2:
-                # 2 missing quadrants: planar
                 point.attributes['type'] = PointType.PLANAR
-                point.attributes['rotation'] = self._calculate_rotation(point, missing_count, missing_quadrants)
-                
             elif missing_count == 3:
-                # 3 missing quadrants: exterior corner
                 point.attributes['type'] = PointType.EXTERIOR_CORNER
-                point.attributes['rotation'] = self._calculate_rotation(point, missing_count, missing_quadrants)
-            else:
-                # 4 missing quadrants - isolated point, should be exterior
-                point.attributes['type'] = PointType.EXTERIOR
-                point.attributes['rotation'] = 0
+            else: # missing_count == 4:
+                point.attributes['type'] = PointType.PLANAR
+            
+            # Calculate rotation
+            point.attributes['rotation'] = self._calculate_rotation(point, missing_count, missing_quadrants)
 
     def _update_point_quadrants(self, point: Point):
         """Update quadrant booleans based on whether diagonal points are drawn"""
@@ -390,7 +338,7 @@ class ShapeDataStructure:
                 if len(points) > 5:
                     print(f"     ... and {len(points) - 5} more")
         
-        print(f"Total points filled in: {len(self.all_points)}")
+        print(f"Total points filled in: {len(self.drawn_points)}")
 
         print("\n" + "="*60)
 
