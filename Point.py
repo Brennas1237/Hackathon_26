@@ -1,5 +1,6 @@
 from typing import Optional
 from Enum import PointType, Quadrant
+import sympy as sp
 
 class Point:
     def __init__(self, x: float, y: float, temperature: float = 20.0, material: Optional[str] = None):
@@ -35,7 +36,9 @@ class Point:
             'material': None,        # Material at this point
             'heat_source': 0.0,          # Energy of heat
             'neighbors': [] ,              # List of adjacent points
-            'rotation': 0.0
+            'rotation': 0.0,
+            'equation': None,
+            "label" : None#
         }
 
         set_temperature = self.attributes['temperature']
