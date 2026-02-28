@@ -18,3 +18,4 @@ class System:
         self.temp = temp
     def get_temp(self):
         return self.temp
+    
