@@ -60,8 +60,18 @@ class Point:
             Quadrant.Q3: False,
             Quadrant.Q4: False
         }
+
+    def get_missing_quadrants(self):
+        """Return a list of missing quadrants for this point"""
+        missing = []
+        for quadrant, has_point in self.quadrants.items():
+            if not has_point:
+                missing.append(quadrant)
+        return missing
+
+    def count_missing_quadrants(self) -> int:
+        """Count how many quadrants are missing (have no point)"""
+        return sum(1 for present in self.quadrants.values() if not present)
         
-
-
     def __str__(self):
         return f"Point({self.x}, {self.y})"
