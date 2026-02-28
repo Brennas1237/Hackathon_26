@@ -1,61 +1,68 @@
-class Draw:
-    def __init__(self, System):
-        # allows a user to draw a shape by clicking and dragging the mouse. The shape is defined by a series of points that are collected as the user drags the mouse. The class also includes methods to check if the shape is touching the walls of the drawing area, and to close the shape if it is not touching the walls.
-        self.shape = []
-        self.material = None # a material from a dictionary of materials in materials.py
-        self.temp = None # int
-        self.system = System
+from splitter import ShapeDataStructure
+import Point
 
+class Draw:
+    def __init__(self, system):
+        self.shape = []  # List of Point objects
+        self.material = None
+        self.temp = None
+        self.system = system
+        self.origin_coords = (0, 0)
+        self.shape_data = ShapeDataStructure()
+        
     def start_draw(self, origin):
-        self.shape.append(origin)
-    
-    def continue_draw(self, point):
+        """Start drawing at origin"""
+        point = Point(origin[0], origin[1])
         self.shape.append(point)
-    
+        
+    def continue_draw(self, point_coords):
+        """Add point to shape"""
+        point = Point(point_coords[0], point_coords[1])
+        self.shape.append(point)
+        
     def end_draw(self):
+        """Finish drawing and construct shape"""
         if not self.is_touching_wall():
             self.close_shape()
-        self.construct_shape()
-
-    def user_input(self, input):
-        # Placeholder for user input handling logic
         
-        if input == "start":
-            if input != (0, 0): # Assuming (0, 0) is the origin
-                # send a message that the user must start drawing from the origin
-                pass
-            else:
-                self.start_draw(input)
-                if input == "continue":
-                    self.continue_draw(input)
-                else:
-                    self.end_draw()
-        pass
-
-    def is_touching_wall(self):
-        if self.shape:
-            for point in self.shape:
-                if point[0] <= 0 or point[0] >= self.system.get_width() or point[1] <= 0 or point[1] >= self.system.get_height():
-                    return True
-        return False
-    
+        # Convert shape points to coordinates and set up point attributes
+        coords = [(p.x, p.y) for p in self.shape]
+        points = self.shape_data.set_up_points(coords)
+        
+        # Apply material and temperature to all points
+        for point in points:
+            point.attributes['material'] = self.material
+            point.attributes['temperature'] = self.temp
+            if self.material:
+                pass # Set material-specific attributes if needed
+        
+        self.construct_shape()
+        
     def close_shape(self):
-        """This does not close to the first point. Instead it adds all of the points needed to touch the y axis"""
+        """Close shape to y-axis if not touching wall"""
         if self.shape:
+            # last item in shape is the last point drawn
             last_point = self.shape[-1]
-            # If the last point is not on the y-axis, add points to touch it
-            if last_point[1] != 0:
+            # if not touching wall, add points to close shape to y-axis
+            if last_point.y != 0:
                 # Add points to reach y=0
-                for y in range(last_point[1], 0, -1):
-                    self.shape.append((last_point[0], y))
+                steps = int(abs(last_point.y) / self.system.get_resolution())
+                for i in range(1, steps + 1):
+                    new_y = last_point.y - i * self.system.get_resolution()
+                    self.shape.append(Point(last_point.x, new_y))
     
-    def construct_shape(self):
-        # Placeholder for shape construction logic
-        # This would involve integrating the points to create a data structure representing the shape, and applying the material properties.
-        constructed_shape = []
-        for point in self.shape:
-            constructed_shape.append(point)
-        return constructed_shape
+    def set_material(self, material):
+        self.material = material
+    def get_material(self):
+        return self.material
+    def set_temp(self, temp):
+        self.temp = temp
+    def get_temp(self):
+        return self.temp
+    def set_origin_coords(self, x, y):
+        self.origin_coords = (x, y)
+    def get_origin_coords(self):
+        return self.origin_coords
 
 
 

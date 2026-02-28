@@ -4,6 +4,7 @@ class System:
     def __init__(self, width, height):
         self.width = width
         self.height = height
+        self.temp = None # int
 
     def get_width(self):
         return self.width
@@ -13,3 +14,7 @@ class System:
         self.width = width
     def set_height(self, height):
         self.height = height
+    def set_temp(self, temp):
+        self.temp = temp
+    def get_temp(self):
+        return self.temp
