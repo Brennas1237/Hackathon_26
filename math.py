@@ -24,3 +24,8 @@ def solve_system(equation_list, variable_list):
     temperature_list = np.linalg.solve(coefficient_matrix, solution_vector)
     return temperature_list
 
+def assign_temp_to_point(point_list, temperature_list):
+    for i in range(len(point_list)):
+        point_list[i].temperature = temperature_list[i]
+
+

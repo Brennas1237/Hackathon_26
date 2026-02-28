@@ -12,7 +12,7 @@ eq2 = x + y + 2*z - 3
 eq3 = x - y + 3*z - 4
 
 equations = [eq1, eq2, eq3]
-variables = [x, y, z]
+variables = [z, y, x]
 
 # 3. Convert to matrix form
 A, b = sp.linear_eq_to_matrix(equations, variables)

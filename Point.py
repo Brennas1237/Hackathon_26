@@ -38,7 +38,7 @@ class Point:
             'neighbors': [] ,              # List of adjacent points
             'rotation': 0.0,
             'equation': None,
-            "label" : None#
+            "label": None
         }
 
         set_temperature = self.attributes['temperature']
