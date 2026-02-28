@@ -75,6 +75,7 @@ def solve_fin(L,w, dx, k=10, h=600, T_base=45, T_inf=25):
     temp_distribution = (np.linalg.solve(matrix, sol_vect)).reshape(y_domain, x_domain)
 
     return temp_distribution
+
 def fin_heat_convective(temp_distribution, dx, h=600, T_inf=25, thickness=1):
     delta_x = dx / 1000
     thickness = thickness

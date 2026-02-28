@@ -1,5 +1,5 @@
 # Hackathon_26
-# Heat Sink Simpulation
+# Heat Sink Simulation
 Problem:
 Analyzing temperature distributions of heat sinks fins with complex geometry is extremely difficult
 
@@ -9,12 +9,17 @@ Users draw a heat sink shape that is assumed to be mirrored across the x-axis. T
 # How to use
 - Run main.py
 - A window will open where you are asked for the x and y dimensions
-- A grid will pop up with changable parameters:
-    - there is a dropdown of materials you can choose. 
-    - If you decide to use a different material than what the options are, you will need to input the ______
-    - The temperature ambient temperature of the fluid can be changed (free stream temperature)
+- A grid will pop up with changeable parameters:
+    - there is a dropdown of heat sink materials you can choose. 
+    - If you decide to use a different heat sink material than what the options are, you will need to input the conductive heat transfer coefficient
+    - there is a dropdown of surrounding fluid materials you can choose. 
+    - If you decide to use a different fluid material than what the options are, you will need to input the convective heat transfer coefficient
+    - The ambient temperature of the fluid can be changed (free stream temperature)
     - The temperature of the heat source can be changed
-
+    - In the grid you can draw your desired geometry. It is assumed the real heat sink is symmetric across the x-axis.
+- Once parameters are set, click "Run Physics" and the program will calculate and show the temperature distribution.
+- Change parameters and click "Run Physics" again to use the same geometry.
+- Click "clear" to reset geometry
 
 
 # How the math works:
