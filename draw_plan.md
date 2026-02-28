@@ -6,12 +6,14 @@ The shape starts as empty
 The shape gets the following attributes:
 - material
 - temp
+- make points into objects
 
 Then has the following attributes:
 start draw
     define this as the origin
+    add it as a point
 continue draw
-    append all of the points
+    append all of the points as point objects
 end draw
     if it is not touching any wall
         closes shape

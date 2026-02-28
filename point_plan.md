@@ -6,3 +6,4 @@ These points have the
 - quadrants: booleans that are true or false for having an existing adjacent corner
 
 
+s

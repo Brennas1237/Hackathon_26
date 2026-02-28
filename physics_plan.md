@@ -8,22 +8,7 @@ Input:
 Output:
 - sympy equation for temperature at node
 
-Functions:
-- calculate rotation value based on missing quadrant
-  - if root node -> rotation = 0
-  - if interior node -> rotation = 0
-  - if interior corner -> rotation = (4 - missing quadrant #) * pi/2
-  - if planar -> 
-    - if q1 & q2 missing -> rotation = 3pi/2
-    - if q2 & q3 missing -> rotation = pi
-    - if q3 & q4 missing -> rotation = pi/2
-    - if q1 & q4 missing - rotation = 0
-  - if exterior corner -> 
-    - if q1 & q2 & q3 missing -> rotation = 3pi/2
-    - if q2 & q3 & q4 missing -> rotation = pi
-    - if q3 & q4 & q1 missing -> rotation = pi/2
-    - if q4 & q1 & q2 missing -> rotation = 0
-  
+Functions: 
 - for point (n,m) equations are
   - if root node
     - T(n,m) = Base Temperature

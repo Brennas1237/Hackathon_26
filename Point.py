@@ -1,26 +1,12 @@
-
-from enum import Enum
 from typing import Optional
-
-class PointType(Enum):
-    ROOT = "root"              # x=0 point
-    INTERIOR = "interior"       # 0 missing quadrants
-    INTERIOR_CORNER = "interior_corner"  # 1 missing quadrant
-    PLANAR = "planar"           # 2 missing quadrants
-    EXTERIOR_CORNER = "exterior_corner"  # 3 missing quadrants
-    EXTERIOR = "exterior"       # if we want to add air for some reason, 4 missing quadrants
-
-class Quadrant(Enum):
-    Q1 = "q1"  # (x+1, y-1)  # Northeast
-    Q2 = "q2"  # (x-1, y-1)  # Northwest
-    Q3 = "q3"  # (x-1, y+1)  # Southwest
-    Q4 = "q4"  # (x+1, y+1)  # Southeast
+from Enum import PointType, Quadrant
 
 class Point:
     def __init__(self, x: float, y: float, temperature: float = 20.0, material: Optional[str] = None):
         self.x = x
         self.y = y
         self.coordinates = (x, y)
+        self.is_drawn = False
         
         # Linked list connections (4-directional)
         self.right: Optional['Point'] = None   # Next point in +x direction
