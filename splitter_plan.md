@@ -11,3 +11,16 @@ Output:
 Functions:
 - make points into objects
 - assign point attributes
+
+
+Math background:
+
+
+
+Pseudocode:
+```python
+
+
+
+
+```
